@@ -1,6 +1,58 @@
 # Omakase Ruby styling for Rails
 inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 
+# Additional linting plugins
+require:
+  - rubocop-performance
+  - rubocop-rspec
+  - rubocop-thread_safety
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.3
+  Exclude:
+    - 'bin/**/*'
+    - 'db/schema.rb'
+    - 'db/migrate/**/*'
+    - 'vendor/**/*'
+    - 'node_modules/**/*'
+    - 'tmp/**/*'
+    - 'storage/**/*'
+    - 'log/**/*'
+
+# Project-specific configurations - overrides Omakase defaults where needed
+
+# Documentation can be minimal for API-only projects
+Style/Documentation:
+  Enabled: false
+
+# Strict time zone handling for better data consistency
+Rails/TimeZone:
+  Enabled: true
+  EnforcedStyle: strict
+
+# Thread safety configurations
+Thread:
+  Enabled: true
+
+# Performance optimizations
+Performance:
+  Enabled: true
+
+# RSpec-specific configurations
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/ExampleLength:
+  Max: 15
+
+RSpec/NestedGroups:
+  Max: 4
+
+# Rails API-specific adjustments
+Rails/HttpStatus:
+  EnforcedStyle: symbolic
+
 # Overwrite or add rules to create your own house style
 #
 # # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
