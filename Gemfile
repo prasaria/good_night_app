@@ -41,6 +41,14 @@ group :development, :test do
   gem "brakeman", require: false
   gem "rubocop-rails-omakase", require: false
   
+  # Additional linting and code quality gems
+  gem "rubocop-performance", require: false
+  gem "rubocop-rspec", require: false
+  gem "rubocop-thread_safety", require: false
+  gem "erb_lint", require: false
+  gem "strong_migrations"  # Catch potentially dangerous migrations
+  gem "bundler-audit"      # Scan for vulnerable gems
+
   # Testing framework
   gem "rspec-rails"
   gem "factory_bot_rails"
