@@ -1,8 +1,8 @@
 # Omakase Ruby styling for Rails
 inherit_gem: { rubocop-rails-omakase: rubocop.yml }
 
-# Additional linting plugins
-require:
+# Use plugins instead of require
+plugins:
   - rubocop-performance
   - rubocop-rspec
   - rubocop-thread_safety
@@ -20,19 +20,20 @@ AllCops:
     - 'storage/**/*'
     - 'log/**/*'
 
-# Project-specific configurations - overrides Omakase defaults where needed
-
-# Documentation can be minimal for API-only projects
+# Project-specific configurations
 Style/Documentation:
   Enabled: false
 
-# Strict time zone handling for better data consistency
 Rails/TimeZone:
   Enabled: true
   EnforcedStyle: strict
 
-# Thread safety configurations
-Thread:
+# Fix the Thread department issue by using specific thread safety cops
+# Instead of "Thread: Enabled: true", we need to enable specific cops
+ThreadSafety/NewThread:
+  Enabled: true
+
+ThreadSafety/ClassInstanceVariable:
   Enabled: true
 
 # Performance optimizations
