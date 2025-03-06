@@ -49,11 +49,12 @@ group :development, :test do
   # Additional testing tools
   gem "shoulda-matchers"  # For testing validations and associations
   gem "database_cleaner-active_record"  # For cleaning test database
+
+  # Add dotenv for environment variable management
+  gem "dotenv-rails"
 end
 
 group :test do
   # Test coverage reporting
   gem "simplecov", require: false
 end
-
-
