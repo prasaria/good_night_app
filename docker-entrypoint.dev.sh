@@ -1,11 +1,29 @@
 #!/bin/bash
 set -e
 
-# If bundle check fails, run bundle install
+# Install dependencies
+echo "Checking bundle installation..."
 bundle check || bundle install
 
-# Remove a potentially pre-existing server.pid for Rails.
+# Remove server.pid if it exists
 rm -f /rails/tmp/pids/server.pid
 
-# Execute the command passed as arguments
+# Wait for database
+echo "Waiting for PostgreSQL..."
+while ! pg_isready -h db -U postgres > /dev/null 2>&1; do
+  sleep 1
+done
+
+# Setup database
+echo "Setting up database..."
+if bundle exec rails db:exists 2>/dev/null; then
+  echo "Database exists, running migrations..."
+  bundle exec rails db:migrate
+else
+  echo "Database doesn't exist, creating and seeding..."
+  bundle exec rails db:prepare db:seed
+fi
+
+# Execute the main command
+echo "Starting application..."
 exec "$@"
