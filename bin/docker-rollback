@@ -1,0 +1,41 @@
+#!/bin/bash
+# Script to run rails db:rollback with optional STEP parameter in Docker
+
+# Check if STEP parameter was provided
+if [ $# -eq 0 ]; then
+  # No arguments, ask user for STEP value
+  read -p "Enter number of migrations to roll back (default: 1): " step_value
+  
+  # If user didn't provide input, default to 1
+  if [ -z "$step_value" ]; then
+    step_value=1
+  fi
+  
+  # Validate that input is a number
+  if ! [[ "$step_value" =~ ^[0-9]+$ ]]; then
+    echo "Error: STEP must be a positive number"
+    exit 1
+  fi
+  
+  # Run rollback with provided STEP value
+  echo "Rolling back $step_value migration(s)..."
+  docker-compose run --rm web rails db:rollback STEP=$step_value
+else
+  # Arguments provided, assume it's the STEP value
+  if [[ "$1" =~ ^STEP=([0-9]+)$ ]]; then
+    # Extract the number from STEP=X format
+    step_value="${BASH_REMATCH[1]}"
+    echo "Rolling back $step_value migration(s)..."
+    docker-compose run --rm web rails db:rollback STEP=$step_value
+  else
+    # Check if first argument is a number
+    if [[ "$1" =~ ^[0-9]+$ ]]; then
+      echo "Rolling back $1 migration(s)..."
+      docker-compose run --rm web rails db:rollback STEP=$1
+    else
+      # Pass through all arguments as-is
+      echo "Running: rails db:rollback $*"
+      docker-compose run --rm web rails db:rollback "$@"
+    fi
+  fi
+fi
