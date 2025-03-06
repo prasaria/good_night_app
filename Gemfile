@@ -40,7 +40,7 @@ group :development, :test do
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
   gem "brakeman", require: false
   gem "rubocop-rails-omakase", require: false
-  
+
   # Additional linting and code quality gems
   gem "rubocop-performance", require: false
   gem "rubocop-rspec", require: false
@@ -53,7 +53,7 @@ group :development, :test do
   gem "rspec-rails"
   gem "factory_bot_rails"
   gem "faker"
-  
+
   # Additional testing tools
   gem "shoulda-matchers"  # For testing validations and associations
   gem "database_cleaner-active_record"  # For cleaning test database
