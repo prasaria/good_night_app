@@ -36,22 +36,22 @@ gem "thruster", require: false
 # gem "rack-cors"
 
 group :development, :test do
-  # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
+  # Existing development/test gems...
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
-
-  # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
-
-  # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
   
   # Testing framework
   gem "rspec-rails"
-  
-  # Test data generation
   gem "factory_bot_rails"
   gem "faker"
   
+  # Additional testing tools
+  gem "shoulda-matchers"  # For testing validations and associations
+  gem "database_cleaner-active_record"  # For cleaning test database
+end
+
+group :test do
   # Test coverage reporting
   gem "simplecov", require: false
 end
