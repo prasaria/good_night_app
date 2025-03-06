@@ -1,0 +1,38 @@
+#!/bin/sh
+
+echo "Running pre-commit hooks..."
+
+# Stash unstaged changes
+git stash -q --keep-index
+
+# Run RuboCop on changed files
+CHANGED_RUBY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "\.rb$")
+if [ -n "$CHANGED_RUBY_FILES" ]; then
+  echo "Running RuboCop on changed files..."
+  bundle exec rubocop $CHANGED_RUBY_FILES
+  RUBOCOP_EXIT_CODE=$?
+else
+  RUBOCOP_EXIT_CODE=0
+fi
+
+# Run Brakeman security scan (only if code layout changed)
+CHANGED_APP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep "^app/")
+if [ -n "$CHANGED_APP_FILES" ]; then
+  echo "Running Brakeman security scan..."
+  bundle exec brakeman -q
+  BRAKEMAN_EXIT_CODE=$?
+else
+  BRAKEMAN_EXIT_CODE=0
+fi
+
+# Restore stashed changes
+git stash pop -q
+
+# Return error if any tool failed
+if [ $RUBOCOP_EXIT_CODE -ne 0 -o $BRAKEMAN_EXIT_CODE -ne 0 ]; then
+  echo "Pre-commit hook failed. Please fix the issues before committing."
+  exit 1
+fi
+
+echo "Pre-commit hook passed."
+exit 0
