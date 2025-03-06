@@ -9,6 +9,9 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 # return unless Rails.env.test?
 require 'rspec/rails'
 # Add additional requires below this line. Rails is not loaded until this point!
+require 'factory_bot_rails'
+require 'faker'
+require 'database_cleaner/active_record'
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
 # spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
@@ -23,7 +26,7 @@ require 'rspec/rails'
 # directory. Alternatively, in the individual `*_spec.rb` files, manually
 # require only the support files necessary.
 #
-# Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
+Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
 
 # Checks for pending migrations and applies them before tests are run.
 # If you are not using ActiveRecord, you can remove these lines.
@@ -41,8 +44,28 @@ RSpec.configure do |config|
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
   # instead of true.
-  config.use_transactional_fixtures = true
+  config.use_transactional_fixtures = false
 
+  # Database Cleaner configuration
+  config.before(:suite) do
+    DatabaseCleaner.clean_with(:truncation)
+  end
+
+  config.before(:each) do
+    DatabaseCleaner.strategy = :transaction
+  end
+
+  config.before(:each, type: :feature) do
+    DatabaseCleaner.strategy = :truncation
+  end
+
+  config.before(:each) do
+    DatabaseCleaner.start
+  end
+
+  config.after(:each) do
+    DatabaseCleaner.clean
+  end
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false
 
@@ -56,15 +79,21 @@ RSpec.configure do |config|
   # The different available types are documented in the features, such as in
   # https://rspec.info/features/7-1/rspec-rails
   #
+
+  # FactoryBot configuration
+  config.include FactoryBot::Syntax::Methods
+
   # You can also this infer these behaviours automatically by location, e.g.
   # /spec/models would pull in the same behaviour as `type: :model` but this
   # behaviour is considered legacy and will be removed in a future version.
   #
   # To enable this behaviour uncomment the line below.
-  # config.infer_spec_type_from_file_location!
+  config.infer_spec_type_from_file_location!
 
   # Filter lines from Rails gems in backtraces.
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+  # Render JSON errors
+  config.render_views = true
 end
