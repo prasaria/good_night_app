@@ -1,4 +1,10 @@
 # .simplecov
+if ENV['CI']
+  SimpleCov.formatters = SimpleCov::Formatter::JSONFormatter
+else
+  SimpleCov.formatters = SimpleCov::Formatter::HTMLFormatter
+end
+
 SimpleCov.start 'rails' do
   add_filter '/bin/'
   add_filter '/db/'
@@ -11,9 +17,6 @@ SimpleCov.start 'rails' do
   add_group 'Services', 'app/services'
   add_group 'Serializers', 'app/serializers'
   
-  # Set minimum coverage percentage
   minimum_coverage 90
-  
-  # Use HTML formatter
-  formatter SimpleCov::Formatter::HTMLFormatter
 end
+
