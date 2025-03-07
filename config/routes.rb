@@ -2,7 +2,7 @@
 Rails.application.routes.draw do
   # API routes
   namespace :api do
-    namespace :v1, constraints: ApiVersion::Constraint.new(1) do
+    namespace :v1 do
       # Sleep records routes
       resources :sleep_records, only: [ :index ] do
         collection do
