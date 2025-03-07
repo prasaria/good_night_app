@@ -1,5 +1,7 @@
 # app/models/sleep_record.rb
 class SleepRecord < ApplicationRecord
+  class_attribute :skip_overlap_validation, default: false # rubocop:disable ThreadSafety/ClassAndModuleAttributes
+
   # Associations
   belongs_to :user
 
@@ -41,12 +43,14 @@ class SleepRecord < ApplicationRecord
   end
 
   def no_overlapping_records
+    # Skip validation if flag is set
+    return if self.class.skip_overlap_validation
     return unless user_id.present? && start_time.present?
 
     overlapping_record = user.sleep_records
                               .where.not(id: id) # Exclude current record when updating
                               .where("(start_time <= ? AND (end_time IS NULL OR end_time >= ?))",
-                                start_time, start_time)
+                                     start_time, start_time)
                               .exists?
 
     if overlapping_record
