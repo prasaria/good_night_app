@@ -1,10 +1,25 @@
+# config/routes.rb
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  # API routes
+  namespace :api do
+    namespace :v1, constraints: ApiVersion::Constraint.new(1) do
+      # Sleep records routes
+      resources :sleep_records, only: [ :index ] do
+        collection do
+          post "start", to: "sleep_records#start"
+        end
+        member do
+          patch "end", to: "sleep_records#end"
+        end
+      end
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
-  get "up" => "rails/health#show", as: :rails_health_check
+      # Followings routes
+      resources :followings, only: [ :index, :create, :destroy ]
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+      # Following sleep records route
+      get "followings/sleep_records", to: "followings_sleep_records#index"
+    end
+  end
+
+  get "api/v1/health", to: "api/v1/health#check"
 end
