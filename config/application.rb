@@ -14,7 +14,7 @@ require "action_view/railtie"
 require "action_cable/engine"
 # require "rails/test_unit/railtie"
 
-require_relative "../app/exceptions/forbidden_error"
+require_relative "../app/exceptions/api_error"
 require_relative "../app/middleware/api_error_handler"
 
 # Require the gems listed in Gemfile, including any gems
