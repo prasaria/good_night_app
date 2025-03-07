@@ -10,8 +10,41 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 0) do
+ActiveRecord::Schema[8.0].define(version: 2025_03_07_031945) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "followings", force: :cascade do |t|
+    t.bigint "follower_id", null: false
+    t.bigint "followed_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["followed_id"], name: "index_followings_on_followed_id"
+    t.index ["follower_id", "followed_id"], name: "index_followings_on_follower_id_and_followed_id", unique: true
+    t.index ["follower_id"], name: "index_followings_on_follower_id"
+  end
+
+  create_table "sleep_records", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.datetime "start_time", null: false
+    t.datetime "end_time"
+    t.integer "duration_minutes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["start_time", "end_time"], name: "index_sleep_records_on_start_time_and_end_time"
+    t.index ["user_id", "created_at"], name: "index_sleep_records_on_user_id_and_created_at"
+    t.index ["user_id", "start_time"], name: "index_sleep_records_on_user_id_and_start_time"
+    t.index ["user_id"], name: "index_sleep_records_on_user_id"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.string "name", limit: 100, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_users_on_name"
+  end
+
+  add_foreign_key "followings", "users", column: "followed_id"
+  add_foreign_key "followings", "users", column: "follower_id"
+  add_foreign_key "sleep_records", "users"
 end
