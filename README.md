@@ -1,4 +1,4 @@
-# Good Night App
+# Good Night Application
 
 A Rails 8 API for tracking sleep patterns and following other users.
 
@@ -72,6 +72,12 @@ To reset the database:
 docker-compose exec web rails db:reset
 ```
 
+To seed the database with development data:
+
+```bash
+docker-compose exec web rails db:seed
+```
+
 ## Development
 
 ### Running the Rails Console
@@ -122,6 +128,63 @@ docker-compose exec web bundle exec rake code_quality:all
 docker-compose exec web bundle exec rubocop -A
 ```
 
+## Database Structure
+
+### Models and Relationships
+
+- **User**
+  - Has many sleep records
+  - Has many followings (as follower)
+  - Has many followed users (through followings)
+  - Has many reverse followings (as followed)
+  - Has many followers (through reverse followings)
+
+- **SleepRecord**
+  - Belongs to a user
+  - Records start time, end time, and duration
+  - Ensures no overlapping sleep records for the same user
+  - Provides scopes for completed, in-progress, and recent records
+
+- **Following**
+  - Associates a follower user with a followed user
+  - Ensures unique follower/followed combinations
+  - Prevents users from following themselves
+
+### Database Indexes
+
+The application uses strategic database indexes to optimize common queries:
+
+- **Sleep Records**:
+  - Index on `user_id` for quick access to a user's sleep records
+  - Composite index on `(user_id, created_at)` for ordered retrieval
+  - Composite index on `(user_id, start_time)` for date range queries
+  - Composite index on `(start_time, end_time)` for duration-based queries
+
+- **Followings**:
+  - Index on `follower_id` for finding who a user follows
+  - Index on `followed_id` for finding a user's followers
+  - Unique composite index on `(follower_id, followed_id)` to prevent duplicate relationships
+
+## Testing Approach
+
+This project follows Test-Driven Development (TDD) principles:
+
+- **Model Tests**: Comprehensive validation and business logic tests
+- **Factory Setup**: FactoryBot factories with traits for various test scenarios
+- **Shoulda Matchers**: For testing validations and associations
+- **Coverage Tracking**: SimpleCov ensures 90%+ test coverage
+- **Database Cleaner**: Ensures clean test state between examples
+
+### Example Test Execution
+
+```bash
+# Run all tests
+docker-compose exec web bundle exec rspec
+
+# Run specific test file
+docker-compose exec web bundle exec rspec spec/models/user_spec.rb
+```
+
 ## API Endpoints
 
 ### Sleep Records
@@ -151,21 +214,6 @@ This application is designed to handle high data volumes and concurrent requests
 - Fiber-based concurrency for I/O operations
 - Efficient query optimization
 
-## Testing
-
-The project maintains high test coverage using:
-
-- RSpec for test framework
-- FactoryBot for test data generation
-- SimpleCov for coverage reporting
-- Database Cleaner for test isolation
-
-Run the full test suite with:
-
-```bash
-docker-compose exec web bundle exec rspec
-```
-
 ## CI/CD Pipeline
 
 The GitHub Actions CI pipeline runs:
@@ -186,7 +234,7 @@ This project follows a modular, service-oriented architecture inspired by Spree 
 
 ## License
 
-This project is using MIT license
+This project is using MIT Licensed and created as part of an interview exercise.
 
 ## Acknowledgments
 
