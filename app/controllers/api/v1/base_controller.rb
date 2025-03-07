@@ -1,14 +1,25 @@
-# app/controllers/api/v1/base_controller.rb
 module Api
   module V1
     class BaseController < ApplicationController
       # Set default format
       before_action :set_default_format
 
-      # Handle common exceptions for all API controllers
-      rescue_from ActiveRecord::RecordNotFound, with: :not_found
-      rescue_from ActionController::ParameterMissing, with: :bad_request
-      rescue_from ActiveRecord::RecordInvalid, with: :unprocessable_entity
+      # Handle common exceptions for all API controllers - grouped by handler
+      rescue_from ActiveRecord::RecordNotFound,
+                  ActionController::RoutingError,
+                  Exceptions::NotFoundError,
+                  with: :not_found
+
+      rescue_from ActionController::ParameterMissing,
+                  Exceptions::BadRequestError,
+                  with: :bad_request
+
+      rescue_from ActiveRecord::RecordInvalid,
+                  Exceptions::UnprocessableEntityError,
+                  with: :unprocessable_entity
+
+      rescue_from Exceptions::ForbiddenError, with: :forbidden
+      rescue_from Exceptions::UnauthorizedError, with: :unauthorized
 
       private
 
@@ -34,11 +45,33 @@ module Api
       end
 
       def unprocessable_entity(exception)
+        error_details = if exception.is_a?(ActiveRecord::RecordInvalid)
+                          exception.record.errors.full_messages
+        else
+                          exception.message
+        end
+
         render json: {
           status: "error",
           message: "Validation failed",
-          details: exception.record.errors.full_messages
+          details: error_details
         }, status: :unprocessable_entity
+      end
+
+      def forbidden(exception)
+        render json: {
+          status: "error",
+          message: "Forbidden",
+          details: exception.message
+        }, status: :forbidden
+      end
+
+      def unauthorized(exception)
+        render json: {
+          status: "error",
+          message: "Unauthorized",
+          details: exception.message
+        }, status: :unauthorized
       end
 
       # Helper for consistent success response format
