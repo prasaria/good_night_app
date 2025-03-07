@@ -1,0 +1,18 @@
+# app/models/following.rb
+class Following < ApplicationRecord
+  # Associations
+  belongs_to :follower, class_name: "User"
+  belongs_to :followed, class_name: "User"
+
+  # Validations
+  validates :follower_id, uniqueness: { scope: :followed_id }
+  validate :not_follow_self
+
+  private
+
+  def not_follow_self
+    if follower_id == followed_id
+      errors.add(:followed_id, "can't follow yourself")
+    end
+  end
+end
