@@ -82,6 +82,17 @@ module Api
           data: data
         }, status: status
       end
+
+      # Generic render error method
+      def render_error(errors, status = :bad_request)
+        error_message = Array(errors).first || "An error occurred"
+
+        render json: {
+          status: "error",
+          message: error_message,
+          details: errors
+        }, status: status
+      end
     end
   end
 end
