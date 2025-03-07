@@ -169,26 +169,15 @@ RSpec.describe SleepRecord, type: :model do
   end
 
   # Instance methods
-  describe '#complete?' do
-    it 'sets the end_time and calculates duration' do
-      sleep_record = create(:sleep_record, start_time: 8.hours.ago)
-      end_time = Time.current
-
-      sleep_record.complete?(end_time)
-
-      expect(sleep_record.end_time).to eq(end_time)
-      expected_minutes = (8 * 60).to_i
-      expect(sleep_record.duration_minutes).to be_within(2).of(expected_minutes)
+  describe '#completed?' do
+    it 'returns true when sleep record has an end time' do
+      sleep_record = create(:sleep_record, :completed)
+      expect(sleep_record.completed?).to be true
     end
 
-    it 'returns true when successfully completed' do
-      sleep_record = create(:sleep_record, start_time: 8.hours.ago)
-      expect(sleep_record).to be_complete(Time.current)
-    end
-
-    it 'returns false when end_time is before start_time' do
-      sleep_record = create(:sleep_record, start_time: 1.hour.ago)
-      expect(sleep_record).not_to be_complete(2.hours.ago)
+    it 'returns false when sleep record has no end time' do
+      sleep_record = create(:sleep_record, end_time: nil)
+      expect(sleep_record.completed?).to be false
     end
   end
 end

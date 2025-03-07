@@ -20,11 +20,9 @@ class SleepRecord < ApplicationRecord
   # Callbacks
   before_save :calculate_duration, if: -> { end_time_changed? && end_time.present? }
 
-  # Methods
-  def complete?(end_time)
-    self.end_time = end_time
-    calculate_duration
-    save
+  # Status checking method
+  def completed?
+    end_time.present?
   end
 
   private
