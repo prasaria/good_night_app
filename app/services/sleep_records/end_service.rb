@@ -30,8 +30,11 @@ module SleepRecords
       # Update the sleep record
       sleep_record.end_time = end_time
 
-      # Calculate duration in minutes
-      sleep_record.duration_minutes = ((end_time - sleep_record.start_time) / 60).to_i
+      # Use the calculator to determine duration
+      sleep_record.duration_minutes = DurationCalculator.calculate_minutes(
+        sleep_record.start_time,
+        sleep_record.end_time
+      )
 
       if sleep_record.save
         ServiceResult.success(sleep_record: sleep_record)
