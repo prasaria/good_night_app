@@ -53,12 +53,14 @@ class ApiErrorHandler
 
   def error_status_code(error)
     case error
-    when ActiveRecord::RecordNotFound, ActionController::RoutingError
+    when ActiveRecord::RecordNotFound, ActionController::RoutingError, Exceptions::NotFoundError
       404
-    when ActionController::ParameterMissing
+    when ActionController::ParameterMissing, Exceptions::BadRequestError
       400
-    when ActiveRecord::RecordInvalid
+    when ActiveRecord::RecordInvalid, Exceptions::UnprocessableEntityError
       422
+    when Exceptions::UnauthorizedError
+      401
     when Exceptions::ForbiddenError
       403
     else
