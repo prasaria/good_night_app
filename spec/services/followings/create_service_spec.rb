@@ -11,42 +11,47 @@ RSpec.describe Followings::CreateService do
         service = described_class.new(follower: follower, followed: followed)
 
         expect {
-          result = service.call
-          expect(result.success?).to be true
+          following = service.call
+          expect(following).to be_a(Following)
+          expect(following).to be_persisted
         }.to change(Following, :count).by(1)
       end
 
       it 'returns the created following' do
         service = described_class.new(follower: follower, followed: followed)
-        result = service.call
+        following = service.call
 
-        expect(result.following).to be_a(Following)
-        expect(result.following).to be_persisted
+        expect(following).to be_a(Following)
+        expect(following).to be_persisted
       end
 
       it 'sets the correct follower and followed users' do
         service = described_class.new(follower: follower, followed: followed)
-        result = service.call
+        following = service.call
 
-        expect(result.following.follower).to eq(follower)
-        expect(result.following.followed).to eq(followed)
+        expect(following.follower).to eq(follower)
+        expect(following.followed).to eq(followed)
       end
     end
 
     context 'when users are the same' do
-      it 'returns an error' do
+      it 'raises UnprocessableEntityError' do
         service = described_class.new(follower: follower, followed: follower)
-        result = service.call
 
-        expect(result.success?).to be false
-        expect(result.errors).to include("You cannot follow yourself")
+        expect {
+          service.call
+        }.to raise_error(Exceptions::UnprocessableEntityError, /cannot follow yourself/i)
       end
 
       it 'does not create a following relationship' do
         service = described_class.new(follower: follower, followed: follower)
 
         expect {
-          service.call
+          begin
+            service.call
+          rescue Exceptions::UnprocessableEntityError
+            # Expected error
+          end
         }.not_to change(Following, :count)
       end
     end
@@ -56,45 +61,49 @@ RSpec.describe Followings::CreateService do
         create(:following, follower: follower, followed: followed)
       end
 
-      it 'returns an error' do
+      it 'raises UnprocessableEntityError' do
         service = described_class.new(follower: follower, followed: followed)
-        result = service.call
 
-        expect(result.success?).to be false
-        expect(result.errors).to include("You are already following this user")
+        expect {
+          service.call
+        }.to raise_error(Exceptions::UnprocessableEntityError, /already following/i)
       end
 
       it 'does not create a duplicate following relationship' do
         service = described_class.new(follower: follower, followed: followed)
 
         expect {
-          service.call
+          begin
+            service.call
+          rescue Exceptions::UnprocessableEntityError
+            # Expected error
+          end
         }.not_to change(Following, :count)
       end
     end
 
     context 'when follower is nil' do
-      it 'returns an error' do
+      it 'raises BadRequestError' do
         service = described_class.new(follower: nil, followed: followed)
-        result = service.call
 
-        expect(result.success?).to be false
-        expect(result.errors).to include("Follower is required")
+        expect {
+          service.call
+        }.to raise_error(Exceptions::BadRequestError, /follower is required/i)
       end
     end
 
     context 'when followed is nil' do
-      it 'returns an error' do
+      it 'raises BadRequestError' do
         service = described_class.new(follower: follower, followed: nil)
-        result = service.call
 
-        expect(result.success?).to be false
-        expect(result.errors).to include("Followed user is required")
+        expect {
+          service.call
+        }.to raise_error(Exceptions::BadRequestError, /followed user is required/i)
       end
     end
 
     context 'when validation fails' do
-      it 'returns the validation errors' do
+      it 'raises UnprocessableEntityError with validation errors' do
         # Create a real Following object with validation errors
         following = build(:following, follower: follower, followed: followed)
 
@@ -108,10 +117,10 @@ RSpec.describe Followings::CreateService do
         allow(Following).to receive(:new).and_return(following)
 
         service = described_class.new(follower: follower, followed: followed)
-        result = service.call
 
-        expect(result.success?).to be false
-        expect(result.errors).to include("Custom validation error")
+        expect {
+          service.call
+        }.to raise_error(Exceptions::UnprocessableEntityError, /custom validation error/i)
       end
     end
   end
