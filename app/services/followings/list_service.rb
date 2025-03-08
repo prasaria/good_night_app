@@ -12,7 +12,7 @@ module Followings
 
     def call
       # Validate user is present
-      return ServiceResult.failure("User is required") if user.nil?
+      raise Exceptions::BadRequestError, "User is required" if user.nil?
 
       # Get followed users query
       followed_users = build_query
@@ -20,17 +20,23 @@ module Followings
       # Set up pagination metadata
       if paginated?
         followed_users, pagination_data = prepare_pagination_data(followed_users)
-        ServiceResult.success(followed_users: followed_users, pagination: pagination_data)
+        {
+          followed_users: followed_users,
+          pagination: pagination_data
+        }
       else
         # For non-paginated results, still include basic pagination info for consistency
         total_count = followed_users.is_a?(Array) ? followed_users.size : followed_users.count
         pagination_data = {
           total_count: total_count,
           current_page: 1,
-          total_pages: (total_count > 0) ? 1 : 0,
+          total_pages: 1,
           per_page: total_count
         }
-        ServiceResult.success(followed_users: followed_users, pagination: pagination_data)
+        {
+          followed_users: followed_users,
+          pagination: pagination_data
+        }
       end
     end
 
