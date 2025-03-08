@@ -43,8 +43,9 @@ module Followings
     private
 
     def build_query
-      # Get base query of followed users
-      query = user.followed_users
+      # Get base query of followed users with the following relationship included
+      # This eager loads the followings data to avoid N+1 when sorting by recent
+      query = user.followed_users.includes(:followings)
 
       # Apply sorting
       query = apply_sorting(query)
