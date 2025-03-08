@@ -14,7 +14,11 @@ Rails.application.routes.draw do
       end
 
       # Followings routes
-      resources :followings, only: [ :index, :create, :destroy ]
+      resources :followings, only: [ :index, :create, :destroy ] do
+        collection do
+          delete :destroy  # Add this line to support DELETE without ID
+        end
+      end
 
       # Following sleep records route
       get "followings/sleep_records", to: "followings_sleep_records#index"
