@@ -25,6 +25,27 @@ module Api
         end
       end
 
+      # PATCH /api/v1/sleep_records/:id/end
+      def end
+        validator = SleepRecordsValidator.new(params)
+
+        unless validator.validate_end_action(params[:id])
+          return render_error(validator.error_message, validator.error_status)
+        end
+
+        result = SleepRecords::EndService.new(
+          sleep_record: validator.sleep_record,
+          end_time: validator.end_time
+        ).call
+
+        if result.success?
+          render_success({ sleep_record: SleepRecordSerializer.new(result.sleep_record).as_json })
+        else
+          status_code = determine_service_error_status_code(result.errors.first)
+          render_error(result.errors, status_code)
+        end
+      end
+
       private
 
       def determine_service_error_status_code(error_message)
