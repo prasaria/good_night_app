@@ -23,7 +23,9 @@ module Api
         ).call
 
         if result.success?
-          render_success({ sleep_record: serialize_sleep_record(result.sleep_record) }, :created)
+          render_success({
+            sleep_record: SleepRecordSerializer.new(result.sleep_record).as_json
+          }, :created)
         else
           status_code = determine_service_error_status_code(result.errors.first)
           render_error(result.errors, status_code)
@@ -31,18 +33,6 @@ module Api
       end
 
       private
-
-      def serialize_sleep_record(record)
-        {
-          id: record.id,
-          user_id: record.user_id,
-          start_time: record.start_time.iso8601,
-          end_time: record.end_time&.iso8601,
-          duration_minutes: record.duration_minutes,
-          created_at: record.created_at.iso8601,
-          updated_at: record.updated_at.iso8601
-        }
-      end
 
       def determine_service_error_status_code(error_message)
         case error_message
