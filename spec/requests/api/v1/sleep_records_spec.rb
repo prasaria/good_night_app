@@ -54,7 +54,7 @@ RSpec.describe "Api::V1::SleepRecords", type: :request do
         expect(response).to have_http_status(:bad_request)
         json_response = JSON.parse(response.body)
         expect(json_response["status"]).to eq("error")
-        expect(json_response["message"]).to eq("Bad request")
+        expect(json_response["message"]).to eq("user_id parameter is required")
       end
 
       it "returns error when user doesn't exist" do
@@ -63,7 +63,7 @@ RSpec.describe "Api::V1::SleepRecords", type: :request do
         expect(response).to have_http_status(:not_found)
         json_response = JSON.parse(response.body)
         expect(json_response["status"]).to eq("error")
-        expect(json_response["message"]).to eq("Not found")
+        expect(json_response["message"]).to eq("User not found")
       end
 
       it "returns error when user already has an in-progress sleep record" do
@@ -75,7 +75,8 @@ RSpec.describe "Api::V1::SleepRecords", type: :request do
         expect(response).to have_http_status(:unprocessable_entity)
         json_response = JSON.parse(response.body)
         expect(json_response["status"]).to eq("error")
-        expect(json_response["details"]).to include("already have an in-progress sleep record")
+        expect(json_response["message"]).to include("already have an in-progress sleep record")
+        expect(json_response["details"]).to eq([ "You already have an in-progress sleep record" ])
       end
 
       it "returns error when start time is in the future" do
