@@ -15,16 +15,9 @@ RSpec.describe SleepRecords::StartService do
         }.to change(SleepRecord, :count).by(1)
       end
 
-      # Check success status
-      it 'returns a successful result' do
-        result = described_class.new(user: user).call
-        expect(result.success?).to be true
-      end
-
       # Check record attributes
       it 'creates a record with correct attributes' do
-        result = described_class.new(user: user).call
-        sleep_record = result.sleep_record
+        sleep_record = described_class.new(user: user).call
 
         aggregate_failures "verifying sleep record attributes" do
           expect(sleep_record).to be_persisted
@@ -36,23 +29,23 @@ RSpec.describe SleepRecords::StartService do
       end
 
       it 'returns the created sleep record' do
-        result = described_class.new(user: user).call
-        expect(result.sleep_record).to be_a(SleepRecord)
+        sleep_record = described_class.new(user: user).call
+        expect(sleep_record).to be_a(SleepRecord)
       end
 
       it 'sets start time to current time by default' do
         freeze_time = Time.current
         allow(Time).to receive(:current).and_return(freeze_time)
 
-        result = described_class.new(user: user).call
-        expect(result.sleep_record.start_time).to eq(freeze_time)
+        sleep_record = described_class.new(user: user).call
+        expect(sleep_record.start_time).to eq(freeze_time)
       end
 
       it 'accepts custom start time' do
         custom_time = 1.hour.ago
-        result = described_class.new(user: user, start_time: custom_time).call
+        sleep_record = described_class.new(user: user, start_time: custom_time).call
 
-        expect(result.sleep_record.start_time).to eq(custom_time)
+        expect(sleep_record.start_time).to eq(custom_time)
       end
     end
 
@@ -61,19 +54,23 @@ RSpec.describe SleepRecords::StartService do
         create(:sleep_record, user: user, start_time: 2.hours.ago, end_time: nil)
       end
 
-      it 'returns an error' do
+      it 'raises UnprocessableEntityError' do
         service = described_class.new(user: user)
-        result = service.call
 
-        expect(result.success?).to be false
-        expect(result.errors).to include("You already have an in-progress sleep record")
+        expect {
+          service.call
+        }.to raise_error(Exceptions::UnprocessableEntityError, /already have an in-progress sleep record/i)
       end
 
       it 'does not create a new sleep record' do
         service = described_class.new(user: user)
 
         expect {
-          service.call
+          begin
+            service.call
+          rescue Exceptions::UnprocessableEntityError
+            # Expected error
+          end
         }.not_to change(SleepRecord, :count)
       end
     end
@@ -81,30 +78,34 @@ RSpec.describe SleepRecords::StartService do
     context 'when validation fails' do
       let(:invalid_start_time) { 1.hour.from_now }
 
-      it 'returns validation errors' do
+      it 'raises UnprocessableEntityError for future start time' do
         service = described_class.new(user: user, start_time: invalid_start_time)
-        result = service.call
 
-        expect(result.success?).to be false
-        expect(result.errors).to include("Start time cannot be in the future")
+        expect {
+          service.call
+        }.to raise_error(Exceptions::UnprocessableEntityError, /cannot be in the future/i)
       end
 
       it 'does not create a new sleep record' do
         service = described_class.new(user: user, start_time: invalid_start_time)
 
         expect {
-          service.call
+          begin
+            service.call
+          rescue Exceptions::UnprocessableEntityError
+            # Expected error
+          end
         }.not_to change(SleepRecord, :count)
       end
     end
 
     context 'when user is nil' do
-      it 'returns an error' do
+      it 'raises BadRequestError' do
         service = described_class.new(user: nil)
-        result = service.call
 
-        expect(result.success?).to be false
-        expect(result.errors).to include("User is required")
+        expect {
+          service.call
+        }.to raise_error(Exceptions::BadRequestError, /user is required/i)
       end
     end
   end

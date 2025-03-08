@@ -9,15 +9,15 @@ module SleepRecords
     end
 
     def call
-      return ServiceResult.failure("User is required") if user.nil?
+      raise Exceptions::BadRequestError, "User is required" if user.nil?
 
       if start_time > Time.current
-        return ServiceResult.failure("Start time cannot be in the future")
+        raise Exceptions::UnprocessableEntityError, "Start time cannot be in the future"
       end
 
       # Check if user already has an in-progress sleep record
       if user.sleep_records.in_progress.exists?
-        return ServiceResult.failure("You already have an in-progress sleep record")
+        raise Exceptions::UnprocessableEntityError, "You already have an in-progress sleep record"
       end
 
       # Create new sleep record
@@ -27,11 +27,14 @@ module SleepRecords
         duration_minutes: nil
       )
 
-      if sleep_record.save
-        ServiceResult.success(sleep_record: sleep_record)
-      else
-        ServiceResult.failure(sleep_record.errors.full_messages)
+      unless sleep_record.save
+        # Convert ActiveRecord errors to a single exception
+        error_message = sleep_record.errors.full_messages.join(", ")
+        raise Exceptions::UnprocessableEntityError, error_message
       end
+
+      # Return the sleep record directly
+      sleep_record
     end
   end
 end
