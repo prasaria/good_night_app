@@ -13,9 +13,9 @@ module Followings
       # Validate parameters
       if id.nil? && (follower.nil? || followed.nil?)
         if follower.nil? && followed.nil?
-          return ServiceResult.failure("Must provide either following ID or both follower and followed users")
+          raise Exceptions::BadRequestError, "Must provide either following ID or both follower and followed users"
         else
-          return ServiceResult.failure("Must provide both follower and followed users")
+          raise Exceptions::BadRequestError, "Must provide both follower and followed users"
         end
       end
 
@@ -24,15 +24,19 @@ module Followings
 
       # Check if following exists
       unless following
-        return ServiceResult.failure("Following relationship not found")
+        raise Exceptions::NotFoundError, "Following relationship not found"
       end
 
       # Attempt to remove the following
-      if following.destroy
-        ServiceResult.success(message: "Successfully unfollowed #{following.followed.name}")
-      else
-        ServiceResult.failure("Failed to unfollow user")
+      unless following.destroy
+        raise Exceptions::UnprocessableEntityError, "Failed to unfollow user"
       end
+
+      # Return success message and the removed following data
+      {
+        message: "Successfully unfollowed #{following.followed.name}",
+        following: following
+      }
     end
 
     private
