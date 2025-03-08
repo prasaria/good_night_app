@@ -1,77 +1,14 @@
+# app/controllers/api/v1/base_controller.rb
 module Api
   module V1
     class BaseController < ApplicationController
       # Set default format
       before_action :set_default_format
 
-      # Handle common exceptions for all API controllers - grouped by handler
-      rescue_from ActiveRecord::RecordNotFound,
-                  ActionController::RoutingError,
-                  Exceptions::NotFoundError,
-                  with: :not_found
-
-      rescue_from ActionController::ParameterMissing,
-                  Exceptions::BadRequestError,
-                  with: :bad_request
-
-      rescue_from ActiveRecord::RecordInvalid,
-                  Exceptions::UnprocessableEntityError,
-                  with: :unprocessable_entity
-
-      rescue_from Exceptions::ForbiddenError, with: :forbidden
-      rescue_from Exceptions::UnauthorizedError, with: :unauthorized
-
       private
 
       def set_default_format
         request.format = :json
-      end
-
-      # Error response methods
-      def not_found(exception)
-        render json: {
-          status: "error",
-          message: "Not found",
-          details: exception.message
-        }, status: :not_found
-      end
-
-      def bad_request(exception)
-        render json: {
-          status: "error",
-          message: "Bad request",
-          details: exception.message
-        }, status: :bad_request
-      end
-
-      def unprocessable_entity(exception)
-        error_details = if exception.is_a?(ActiveRecord::RecordInvalid)
-                          exception.record.errors.full_messages
-        else
-                          exception.message
-        end
-
-        render json: {
-          status: "error",
-          message: "Validation failed",
-          details: error_details
-        }, status: :unprocessable_entity
-      end
-
-      def forbidden(exception)
-        render json: {
-          status: "error",
-          message: "Forbidden",
-          details: exception.message
-        }, status: :forbidden
-      end
-
-      def unauthorized(exception)
-        render json: {
-          status: "error",
-          message: "Unauthorized",
-          details: exception.message
-        }, status: :unauthorized
       end
 
       # Helper for consistent success response format
@@ -83,15 +20,26 @@ module Api
         }, status: status
       end
 
-      # Generic render error method
       def render_error(errors, status = :bad_request)
         error_message = Array(errors).first || "An error occurred"
 
-        render json: {
-          status: "error",
-          message: error_message,
-          details: errors
-        }, status: status
+        # Map status symbols to exception classes
+        exception_class = case status
+        when :not_found
+          Exceptions::NotFoundError
+        when :bad_request
+          Exceptions::BadRequestError
+        when :unprocessable_entity
+          Exceptions::UnprocessableEntityError
+        when :forbidden
+          Exceptions::ForbiddenError
+        when :unauthorized
+          Exceptions::UnauthorizedError
+        else
+          Exceptions::BadRequestError
+        end
+
+        raise exception_class.new(error_message)
       end
     end
   end
