@@ -22,28 +22,8 @@ class ApiErrorHandler
   end
 
   def handle_api_error(error, env)
-    status_code = error_status_code(error)
-
-    error_response = {
-      status: "error",
-      message: status_message(status_code),
-      details: error.message
-    }
-
-    # Add backtrace in development for debugging
-    if Rails.env.development? || Rails.env.test?
-      error_response[:backtrace] = error.backtrace&.first(10)
-      error_response[:error_class] = error.class.name
-
-      # Add request details
-      request_info = {
-        path: env["PATH_INFO"],
-        method: env["REQUEST_METHOD"],
-        query: env["QUERY_STRING"],
-        format: env["HTTP_ACCEPT"]
-      }
-      error_response[:request] = request_info
-    end
+    status_code = determine_status_code(error)
+    error_response = build_error_response(error, status_code, env)
 
     headers = { "Content-Type" => "application/json" }
     body = [ error_response.to_json ]
@@ -51,21 +31,48 @@ class ApiErrorHandler
     [ status_code, headers, body ]
   end
 
-  def error_status_code(error)
-    case error
-    when ActiveRecord::RecordNotFound, ActionController::RoutingError, Exceptions::NotFoundError
-      404
-    when ActionController::ParameterMissing, Exceptions::BadRequestError
-      400
-    when ActiveRecord::RecordInvalid, Exceptions::UnprocessableEntityError
-      422
-    when Exceptions::UnauthorizedError
-      401
-    when Exceptions::ForbiddenError
-      403
+  def determine_status_code(error)
+    if error.respond_to?(:http_status)
+      error.http_status
     else
-      500
+      case error
+      when ActiveRecord::RecordNotFound, ActionController::RoutingError
+        404
+      when ActionController::ParameterMissing
+        400
+      when ActiveRecord::RecordInvalid
+        422
+      else
+        500
+      end
     end
+  end
+
+  def build_error_response(error, status_code, env)
+    response = {
+      status: "error",
+      message: status_message(status_code),
+      details: error.message
+    }
+
+    # Add error_code if available
+    response[:error_code] = error.error_code if error.respond_to?(:error_code)
+
+    # Add debugging information in development
+    if Rails.env.development? || Rails.env.test?
+      response[:backtrace] = error.backtrace&.first(10)
+      response[:error_class] = error.class.name
+
+      # Add request details
+      response[:request] = {
+        path: env["PATH_INFO"],
+        method: env["REQUEST_METHOD"],
+        query: env["QUERY_STRING"],
+        format: env["HTTP_ACCEPT"]
+      }
+    end
+
+    response
   end
 
   def status_message(status_code)

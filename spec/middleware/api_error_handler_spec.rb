@@ -49,6 +49,7 @@ RSpec.describe ApiErrorHandler do
         json_body = JSON.parse(body.first)
         expect(json_body['details']).to include('Something went wrong')
         expect(json_body).to have_key('backtrace')
+        expect(json_body).to have_key('request')
       end
 
       it 'does not include backtrace in production mode' do
@@ -63,6 +64,7 @@ RSpec.describe ApiErrorHandler do
 
         json_body = JSON.parse(body.first)
         expect(json_body).not_to have_key('backtrace')
+        expect(json_body).not_to have_key('request')
       end
     end
 
@@ -78,20 +80,46 @@ RSpec.describe ApiErrorHandler do
       end
     end
 
-    context 'with different error types' do
+    context 'with custom ApiError exceptions' do
+      [
+        Exceptions::BadRequestError.new("Bad request test"),
+        Exceptions::UnauthorizedError.new("Unauthorized test"),
+        Exceptions::ForbiddenError.new("Forbidden test"),
+        Exceptions::NotFoundError.new("Not found test"),
+        Exceptions::UnprocessableEntityError.new("Validation test"),
+        Exceptions::InternalServerError.new("Internal error test")
+      ].each do |error|
+        it "handles #{error.class.name} with status #{error.http_status}" do
+          app_with_error = ->(env) { raise error }
+          middleware_with_error = described_class.new(app_with_error)
+
+          env = {
+            'PATH_INFO' => '/api/v1/health',
+            'HTTP_ACCEPT' => 'application/json'
+          }
+
+          status, _, body = middleware_with_error.call(env)
+          json_body = JSON.parse(body.first)
+
+          expect(status).to eq(error.http_status)
+          expect(json_body['details']).to eq(error.message)
+          expect(json_body).to have_key('error_code') if error.respond_to?(:error_code)
+        end
+      end
+    end
+
+    context 'with standard Rails exceptions' do
       let(:error_mapping) do
         {
-          'ActiveRecord::RecordNotFound' => 404,
-          'ActionController::ParameterMissing' => 400,
-          'ActiveRecord::RecordInvalid' => 422,
-          'Exceptions::ForbiddenError' => 403,
-          'ActionController::RoutingError' => 404
+          ActiveRecord::RecordNotFound.new("Record not found") => 404,
+          ActionController::ParameterMissing.new("param") => 400,
+          ActiveRecord::RecordInvalid.new(User.new) => 422,
+          ActionController::RoutingError.new("not found") => 404
         }
       end
 
       it 'maps errors to appropriate status codes' do
-        error_mapping.each do |error_class, status_code|
-          error_instance = error_class.constantize.new rescue error_class.constantize.new('test')
+        error_mapping.each do |error_instance, status_code|
           app_with_error = ->(env) { raise error_instance }
           middleware_with_error = described_class.new(app_with_error)
 
@@ -101,7 +129,8 @@ RSpec.describe ApiErrorHandler do
           }
 
           status, _, _ = middleware_with_error.call(env)
-          expect(status).to eq(status_code), "Expected #{error_class} to map to status #{status_code}, but got #{status}"
+          expect(status).to eq(status_code),
+            "Expected #{error_instance.class} to map to status #{status_code}, but got #{status}"
         end
       end
     end
