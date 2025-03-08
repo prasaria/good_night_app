@@ -144,8 +144,8 @@ RSpec.describe SleepRecords::RetrievalService do
         result = service.call
 
         expect(result[:records].length).to eq(2)  # 2 records per page
-        expect(result[:page]).to eq(2)
-        expect(result[:total_pages]).to eq(3)  # 5 records total, 2 per page = 3 pages
+        expect(result[:pagination][:current_page]).to eq(2)
+        expect(result[:pagination][:total_pages]).to eq(3)  # 5 records total, 2 per page = 3 pages
       end
 
       it 'includes pagination metadata' do

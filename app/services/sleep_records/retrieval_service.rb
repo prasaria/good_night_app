@@ -22,12 +22,19 @@ module SleepRecords
         records, pagination_data = prepare_pagination_data(records)
         {
           records: records,
-          page: pagination_data[:current_page],
-          total_pages: pagination_data[:total_pages],
           pagination: pagination_data
         }
       else
-        { records: records }
+        total_count = records.size
+        {
+          records: records,
+          pagination: {
+            current_page: 1,
+            total_pages: 1,
+            total_count: total_count,
+            per_page: total_count
+          }
+        }
       end
     end
 
