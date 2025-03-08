@@ -24,6 +24,13 @@ This application provides a REST API for users to track their sleep schedules an
   - Sort by sleep duration
   - Chronological presentation of all records
 
+## Architecture Highlights
+
+- **Middleware-Centric Error Handling**: Centralized error handling through middleware that intercepts exceptions and formats consistent API responses
+- **Service-Oriented Design**: Domain logic encapsulated in service objects with a consistent interface
+- **Validator Pattern**: Input validation through dedicated validator classes that raise appropriate exceptions
+- **API-First Design**: RESTful endpoints with comprehensive filtering, sorting, and pagination
+
 ## Technical Requirements
 
 - Ruby 3.3.4
@@ -175,6 +182,14 @@ This project follows Test-Driven Development (TDD) principles:
 - **Coverage Tracking**: SimpleCov ensures 90%+ test coverage
 - **Database Cleaner**: Ensures clean test state between examples
 
+### Test Categories
+
+- **Unit Tests**: Testing individual components in isolation
+- **Integration Tests**: Testing interactions between components
+- **End-to-End Tests**: Testing complete user workflows
+- **Edge Case Tests**: Testing boundary conditions and error scenarios
+- **Security Tests**: Testing access controls and validation
+
 ### Example Test Execution
 
 ```bash
@@ -183,6 +198,9 @@ docker-compose exec web bundle exec rspec
 
 # Run specific test file
 docker-compose exec web bundle exec rspec spec/models/user_spec.rb
+
+# Run end-to-end tests
+docker-compose exec web bundle exec rspec spec/e2e
 ```
 
 ## API Endpoints
@@ -191,17 +209,55 @@ docker-compose exec web bundle exec rspec spec/models/user_spec.rb
 
 - `POST /api/v1/sleep_records/start` - Mark sleep start time
 - `PATCH /api/v1/sleep_records/:id/end` - Mark sleep end time
-- `GET /api/v1/sleep_records` - Get current user's sleep records
+- `GET /api/v1/sleep_records` - Get current user's sleep records with filtering, sorting, and pagination options
 
 ### Following System
 
 - `POST /api/v1/followings` - Follow a user
 - `DELETE /api/v1/followings/:id` - Unfollow a user
-- `GET /api/v1/followings` - Get list of users the current user follows
+- `DELETE /api/v1/followings` - Unfollow a user (using follower_id and followed_id)
+- `GET /api/v1/followings` - Get list of users the current user follows with sorting and pagination
 
 ### Following Sleep Records
 
-- `GET /api/v1/followings/sleep_records` - Get sleep records of followed users
+- `GET /api/v1/followings/sleep_records` - Get sleep records of followed users with filtering, sorting, and pagination
+
+## Key Components
+
+### Error Handler Middleware
+
+The application uses a centralized error handling middleware that:
+
+- Captures exceptions throughout the application
+- Maps exceptions to appropriate HTTP status codes
+- Provides consistent JSON error responses
+- Includes additional debugging information in development
+
+### Validators
+
+Input validation is handled by dedicated validator classes that:
+
+- Perform parameter presence and format validation
+- Raise appropriate exceptions for validation failures
+- Provide clean access to parsed and validated data
+
+### Service Objects
+
+Business logic is encapsulated in service objects that:
+
+- Follow a consistent interface pattern
+- Handle one specific action or workflow
+- Raise domain-specific exceptions for error conditions
+- Return data directly rather than wrapping in result objects
+
+### Serializers
+
+API responses are formatted by serializers that:
+
+- Provide consistent JSON structure
+- Include appropriate relationships
+- Avoid N+1 query issues through proper eager loading
+- Support conditional inclusion of related data
 
 ## Scalability Strategies
 
@@ -230,7 +286,8 @@ This project follows a modular, service-oriented architecture inspired by Spree 
 - Controllers handle HTTP request/response cycle
 - Service objects encapsulate business logic
 - Serializers format API responses
-- Comprehensive test suite
+- Validators ensure data integrity
+- Middleware provides cross-cutting concerns
 
 ## License
 
