@@ -2,11 +2,12 @@
 module Api
   module V1
     class SleepRecordsValidator
-      attr_reader :params, :errors
+      attr_reader :params, :errors, :user, :start_time
 
       def initialize(params)
         @params = params
         @errors = []
+        @user = nil
       end
 
       def validate_start_action
@@ -52,15 +53,11 @@ module Api
         return unless params[:start_time].present?
 
         begin
-          start_time = Time.zone.parse(params[:start_time])
-          @errors << "Start time cannot be in the future" if start_time > Time.current
+          @start_time = Time.zone.parse(params[:start_time])
+          @errors << "Start time cannot be in the future" if @start_time > Time.current
         rescue ArgumentError
           @errors << "Invalid start_time format"
         end
-      end
-
-      def user
-        @user
       end
     end
   end

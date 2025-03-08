@@ -10,16 +10,9 @@ module Api
           return render_error(validator.error_message, validator.error_status)
         end
 
-        # Get user from the validator (could also be refactored to return the user)
-        user = User.find(params[:user_id])
-
-        # Parse start_time if provided
-        start_time = params[:start_time].present? ? Time.zone.parse(params[:start_time]) : nil
-
-        # Use the service to create a sleep record
         result = SleepRecords::StartService.new(
-          user: user,
-          start_time: start_time
+          user: validator.user,
+          start_time: validator.start_time
         ).call
 
         if result.success?
