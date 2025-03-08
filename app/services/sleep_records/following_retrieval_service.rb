@@ -22,7 +22,16 @@ module SleepRecords
         records, pagination_data = prepare_pagination_data(records)
         { records: records, pagination: pagination_data }
       else
-        { records: records }
+        total_count = records.size
+        {
+          records: records,
+          pagination: {
+            current_page: 1,
+            total_pages: 1,
+            total_count: total_count,
+            per_page: total_count
+          }
+        }
       end
     end
 
@@ -31,10 +40,10 @@ module SleepRecords
     def build_query
       # Get IDs of followed users
       followed_user_ids = if options[:followed_user_ids].present?
-                            # Filter to ensure we only include actual followed users
-                            (user.followed_user_ids & Array(options[:followed_user_ids]))
+        # Convert to integers and filter to ensure it only include actual followed users
+        (user.followed_user_ids & Array(options[:followed_user_ids]).map(&:to_i))
       else
-                            user.followed_user_ids
+        user.followed_user_ids
       end
 
       # Return early if user follows no one
