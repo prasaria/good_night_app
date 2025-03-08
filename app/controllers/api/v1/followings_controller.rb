@@ -2,6 +2,29 @@
 module Api
   module V1
     class FollowingsController < BaseController
+      # GET /api/v1/followings
+      def index
+        validator = FollowingsValidator.new(params)
+        validator.validate_index_action
+
+        result = Followings::ListService.new(
+          user: validator.user,
+          sort_by: params[:sort_by],
+          sort_direction: params[:sort_direction],
+          page: params[:page],
+          per_page: params[:per_page]
+        ).call
+
+        # render_success({
+        #   followings: FollowingSerializer.serialize_collection(result[:followed_users], include_users: true),
+        #   pagination: result[:pagination]
+        # })
+        render_success({
+          followed_users: result[:followed_users].map { |user| UserSerializer.new(user).as_json },
+          pagination: result[:pagination]
+        })
+      end
+
       # POST /api/v1/followings
       def create
         validator = FollowingsValidator.new(params)
