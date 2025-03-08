@@ -2,6 +2,85 @@
 require 'rails_helper'
 
 RSpec.describe Api::V1::SleepRecordsValidator do
+  describe '#validate_index_action' do
+  context 'with missing user_id' do
+    let(:params) { {} }
+
+    it 'raises BadRequestError' do
+      validator = described_class.new(params)
+      expect { validator.validate_index_action }.to raise_error(
+        Exceptions::BadRequestError, /user_id parameter is required/i
+      )
+    end
+  end
+
+  context 'with non-existent user_id' do
+    let(:params) { { user_id: 999999 } }
+
+    it 'raises NotFoundError' do
+      validator = described_class.new(params)
+      expect { validator.validate_index_action }.to raise_error(
+        Exceptions::NotFoundError, /user not found/i
+      )
+    end
+  end
+
+  context 'with invalid date formats' do
+    let(:user) { create(:user) }
+
+    it 'raises BadRequestError for invalid start_date' do
+      validator = described_class.new({ user_id: user.id, start_date: 'not-a-date' })
+      expect { validator.validate_index_action }.to raise_error(
+        Exceptions::BadRequestError, /invalid start_date format/i
+      )
+    end
+
+    it 'raises BadRequestError for invalid end_date' do
+      validator = described_class.new({ user_id: user.id, end_date: 'not-a-date' })
+      expect { validator.validate_index_action }.to raise_error(
+        Exceptions::BadRequestError, /invalid end_date format/i
+      )
+    end
+  end
+
+  context 'when start_date is after end_date' do
+    let(:user) { create(:user) }
+    let(:params) {
+      {
+        user_id: user.id,
+        start_date: 1.day.ago.iso8601,
+        end_date: 3.days.ago.iso8601
+      }
+    }
+
+    it 'raises BadRequestError' do
+      validator = described_class.new(params)
+      expect { validator.validate_index_action }.to raise_error(
+        Exceptions::BadRequestError, /start_date must be before end_date/i
+      )
+    end
+  end
+
+  context 'with valid parameters' do
+    let(:user) { create(:user) }
+    let(:params) { { user_id: user.id } }
+
+    it 'passes validation' do
+      validator = described_class.new(params)
+      expect(validator.validate_index_action).to be true
+    end
+
+    it 'passes validation with valid date range' do
+      validator = described_class.new({
+        user_id: user.id,
+        start_date: 3.days.ago.iso8601,
+        end_date: 1.day.ago.iso8601
+      })
+      expect(validator.validate_index_action).to be true
+    end
+  end
+end
+
   describe '#validate_start_action' do
     context 'with missing user_id' do
       let(:params) { {} }
