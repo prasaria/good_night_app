@@ -15,10 +15,6 @@ module Api
           per_page: params[:per_page]
         ).call
 
-        # render_success({
-        #   followings: FollowingSerializer.serialize_collection(result[:followed_users], include_users: true),
-        #   pagination: result[:pagination]
-        # })
         render_success({
           followed_users: result[:followed_users].map { |user| UserSerializer.new(user).as_json },
           pagination: result[:pagination]
