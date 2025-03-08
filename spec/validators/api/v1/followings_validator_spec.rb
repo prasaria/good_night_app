@@ -2,6 +2,38 @@
 require 'rails_helper'
 
 RSpec.describe Api::V1::FollowingsValidator do
+  describe '#validate_index_action' do
+    context 'with missing user_id' do
+      it 'raises BadRequestError' do
+        validator = described_class.new({})
+
+        expect {
+          validator.validate_index_action
+        }.to raise_error(Exceptions::BadRequestError, /user_id parameter is required/i)
+      end
+    end
+
+    context 'with non-existent user_id' do
+      it 'raises NotFoundError' do
+        validator = described_class.new({ user_id: 999999 })
+
+        expect {
+          validator.validate_index_action
+        }.to raise_error(Exceptions::NotFoundError, /User not found/i)
+      end
+    end
+
+    context 'with valid user_id' do
+      it 'sets the user and returns true' do
+        user = create(:user)
+        validator = described_class.new({ user_id: user.id })
+
+        expect(validator.validate_index_action).to be true
+        expect(validator.user).to eq(user)
+      end
+    end
+  end
+
   describe '#validate_create_action' do
     context 'with missing parameters' do
       it 'raises BadRequestError when follower_id is missing' do

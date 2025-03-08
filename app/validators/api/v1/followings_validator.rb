@@ -2,13 +2,19 @@
 module Api
   module V1
     class FollowingsValidator
-      attr_reader :params, :follower, :followed, :following
+      attr_reader :params, :follower, :followed, :following, :user
 
       def initialize(params)
         @params = params
         @follower = nil
         @followed = nil
         @following = nil
+      end
+
+      def validate_index_action
+        validate_user_id_presence
+        validate_user_exists
+        true
       end
 
       def validate_create_action
@@ -37,6 +43,20 @@ module Api
       end
 
       private
+
+      def validate_user_id_presence
+        unless params[:user_id].present?
+          raise Exceptions::BadRequestError, "user_id parameter is required"
+        end
+      end
+
+      def validate_user_exists
+        begin
+          @user = User.find(params[:user_id])
+        rescue ActiveRecord::RecordNotFound
+          raise Exceptions::NotFoundError, "User not found"
+        end
+      end
 
       def validate_follower_id_presence
         unless params[:follower_id].present?
