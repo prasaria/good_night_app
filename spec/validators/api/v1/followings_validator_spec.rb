@@ -76,4 +76,73 @@ RSpec.describe Api::V1::FollowingsValidator do
       end
     end
   end
+
+  describe '#validate_destroy_action' do
+  context 'when using id parameter' do
+    it 'raises NotFoundError when following does not exist' do
+      validator = described_class.new({ id: 999999 })
+
+      expect {
+        validator.validate_destroy_action
+      }.to raise_error(Exceptions::NotFoundError, /Following relationship not found/)
+    end
+
+    it 'sets following, follower and followed when found' do
+      follower = create(:user)
+      followed = create(:user)
+      following = create(:following, follower: follower, followed: followed)
+
+      validator = described_class.new({ id: following.id })
+      validator.validate_destroy_action
+
+      expect(validator.following).to eq(following)
+      expect(validator.follower).to eq(follower)
+      expect(validator.followed).to eq(followed)
+    end
+  end
+
+  context 'when using follower_id and followed_id parameters' do
+    it 'raises NotFoundError when following relationship does not exist' do
+      follower = create(:user)
+      followed = create(:user)
+
+      validator = described_class.new({ follower_id: follower.id, followed_id: followed.id })
+
+      expect {
+        validator.validate_destroy_action
+      }.to raise_error(Exceptions::NotFoundError, /Following relationship not found between these users/)
+    end
+
+    it 'sets following when relationship is found' do
+      follower = create(:user)
+      followed = create(:user)
+      following = create(:following, follower: follower, followed: followed)
+
+      validator = described_class.new({ follower_id: follower.id, followed_id: followed.id })
+      validator.validate_destroy_action
+
+      expect(validator.following).to eq(following)
+    end
+
+    it 'raises BadRequestError when follower_id is missing' do
+      followed = create(:user)
+
+      validator = described_class.new({ followed_id: followed.id })
+
+      expect {
+        validator.validate_destroy_action
+      }.to raise_error(Exceptions::BadRequestError, /follower_id parameter is required/)
+    end
+
+    it 'raises BadRequestError when followed_id is missing' do
+      follower = create(:user)
+
+      validator = described_class.new({ follower_id: follower.id })
+
+      expect {
+        validator.validate_destroy_action
+      }.to raise_error(Exceptions::BadRequestError, /followed_id parameter is required/)
+    end
+  end
+end
 end
