@@ -12,17 +12,17 @@ module SleepRecords
 
     def call
       # Validate user is present
-      return ServiceResult.failure("User is required") if user.nil?
+      raise Exceptions::BadRequestError, "User is required" if user.nil?
 
       # Build query
       records = build_query
 
-      # Paginate if requested
+      # Process and return results
       if paginated?
         records, pagination_data = prepare_pagination_data(records)
-        ServiceResult.success(records: records, pagination: pagination_data)
+        { records: records, pagination: pagination_data }
       else
-        ServiceResult.success(records: records)
+        { records: records }
       end
     end
 

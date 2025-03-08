@@ -26,16 +26,25 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
       create(:sleep_record, user: first_followed_user, start_time: 2.hours.ago, end_time: nil)
     end
 
+    context 'when user is not provided' do
+      it 'raises BadRequestError' do
+        service = described_class.new(user: nil)
+
+        expect {
+          service.call
+        }.to raise_error(Exceptions::BadRequestError, /User is required/i)
+      end
+    end
+
     context 'when retrieving records with default options' do
       it 'returns sleep records from followed users' do
         service = described_class.new(user: user)
         result = service.call
 
-        expect(result.success?).to be true
-        expect(result.records.length).to eq(5)  # All records from followed users
+        expect(result[:records].length).to eq(5)  # All records from followed users
 
         # Verify all records belong to followed users
-        user_ids = result.records.map(&:user_id).uniq
+        user_ids = result[:records].map(&:user_id).uniq
         expect(user_ids).to contain_exactly(first_followed_user.id, second_followed_user.id)
       end
 
@@ -43,7 +52,7 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
         service = described_class.new(user: user)
         result = service.call
 
-        expect(result.records.first.created_at).to be > result.records.last.created_at
+        expect(result[:records].first.created_at).to be > result[:records].last.created_at
       end
     end
 
@@ -52,18 +61,16 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
         service = described_class.new(user: user, completed_only: true)
         result = service.call
 
-        expect(result.success?).to be true
-        expect(result.records.length).to eq(4)  # 4 completed records from followed users
-        expect(result.records).to all(be_completed)
+        expect(result[:records].length).to eq(4)  # 4 completed records from followed users
+        expect(result[:records]).to all(be_completed)
       end
 
       it 'returns only in-progress records when requested' do
         service = described_class.new(user: user, in_progress_only: true)
         result = service.call
 
-        expect(result.success?).to be true
-        expect(result.records.length).to eq(1)  # 1 in-progress record from followed users
-        expect(result.records.first.end_time).to be_nil
+        expect(result[:records].length).to eq(1)  # 1 in-progress record from followed users
+        expect(result[:records].first.end_time).to be_nil
       end
     end
 
@@ -72,9 +79,8 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
         service = described_class.new(user: user, from_last_week: true)
         result = service.call
 
-        expect(result.success?).to be true
-        expect(result.records.length).to eq(4)  # 4 records within last week
-        expect(result.records.map(&:start_time)).to all(be > 1.week.ago)
+        expect(result[:records].length).to eq(4)  # 4 records within last week
+        expect(result[:records].map(&:start_time)).to all(be > 1.week.ago)
       end
     end
 
@@ -84,7 +90,7 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
         result = service.call
 
         # Get completed records only
-        completed_records = result.records.select(&:completed?)
+        completed_records = result[:records].select(&:completed?)
         durations = completed_records.map(&:duration_minutes)
 
         # Check if durations are in non-decreasing order
@@ -96,7 +102,7 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
         result = service.call
 
         # Get completed records only
-        completed_records = result.records.select(&:completed?)
+        completed_records = result[:records].select(&:completed?)
         durations = completed_records.map(&:duration_minutes)
 
         # Check if durations are in non-increasing order
@@ -109,8 +115,7 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
         service = described_class.new(user: user, limit: 2)
         result = service.call
 
-        expect(result.success?).to be true
-        expect(result.records.length).to eq(2)
+        expect(result[:records].length).to eq(2)
       end
     end
 
@@ -119,18 +124,16 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
         service = described_class.new(user: user, page: 2, per_page: 2)
         result = service.call
 
-        expect(result.success?).to be true
-        expect(result.records.length).to eq(2)  # 2 records per page
-        expect(result.pagination[:current_page]).to eq(2)
-        expect(result.pagination[:total_pages]).to eq(3)  # 5 records total, 2 per page = 3 pages
+        expect(result[:records].length).to eq(2)  # 2 records per page
+        expect(result[:pagination][:current_page]).to eq(2)
+        expect(result[:pagination][:total_pages]).to eq(3)  # 5 records total, 2 per page = 3 pages
       end
 
       it 'includes pagination metadata' do
         service = described_class.new(user: user, page: 1, per_page: 2)
         result = service.call
 
-        expect(result.success?).to be true
-        expect(result.pagination).to include(
+        expect(result[:pagination]).to include(
           current_page: 1,
           total_pages: 3,
           total_count: 5,
@@ -139,24 +142,13 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
       end
     end
 
-    context 'when user is not provided' do
-      it 'returns an error' do
-        service = described_class.new(user: nil)
-        result = service.call
-
-        expect(result.success?).to be false
-        expect(result.errors).to include("User is required")
-      end
-    end
-
     context 'when filtering by specific followed users' do
       it 'returns records from specific followed users when provided' do
         service = described_class.new(user: user, followed_user_ids: [ first_followed_user.id ])
         result = service.call
 
-        expect(result.success?).to be true
-        expect(result.records.length).to eq(3)  # 3 records from first_followed_user
-        expect(result.records.map(&:user_id).uniq).to eq([ first_followed_user.id ])
+        expect(result[:records].length).to eq(3)  # 3 records from first_followed_user
+        expect(result[:records].map(&:user_id).uniq).to eq([ first_followed_user.id ])
       end
     end
 
@@ -167,8 +159,7 @@ RSpec.describe SleepRecords::FollowingRetrievalService do
         service = described_class.new(user: lonely_user)
         result = service.call
 
-        expect(result.success?).to be true
-        expect(result.records).to be_empty
+        expect(result[:records]).to be_empty
       end
     end
   end
