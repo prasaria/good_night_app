@@ -1,32 +1,48 @@
 # app/exceptions/api_errors.rb
 module Exceptions
-  class BadRequestError < StandardError
-    def initialize(message = "Bad request")
+  class ApiError < StandardError
+    attr_reader :http_status, :error_code
+
+    def initialize(message, http_status, error_code = nil)
+      @http_status = http_status
+      @error_code = error_code || self.class.name.demodulize.underscore
       super(message)
     end
   end
 
-  class UnauthorizedError < StandardError
-    def initialize(message = "Authentication required")
-      super(message)
+  class BadRequestError < ApiError
+    def initialize(message = "Bad request", error_code = nil)
+      super(message, 400, error_code)
     end
   end
 
-  class ForbiddenError < StandardError
-    def initialize(message = "You don't have permission to access this resource")
-      super(message)
+  class UnauthorizedError < ApiError
+    def initialize(message = "Authentication required", error_code = nil)
+      super(message, 401, error_code)
     end
   end
 
-  class NotFoundError < StandardError
-    def initialize(message = "Resource not found")
-      super(message)
+  class ForbiddenError < ApiError
+    def initialize(message = "You don't have permission to access this resource", error_code = nil)
+      super(message, 403, error_code)
     end
   end
 
-  class UnprocessableEntityError < StandardError
-    def initialize(message = "Validation failed")
-      super(message)
+  class NotFoundError < ApiError
+    def initialize(message = "Resource not found", error_code = nil)
+      super(message, 404, error_code)
+    end
+  end
+
+  class UnprocessableEntityError < ApiError
+    def initialize(message = "Validation failed", error_code = nil)
+      super(message, 422, error_code)
+    end
+  end
+
+  class InternalServerError < ApiError
+    def initialize(message = "Internal server error", error_code = nil)
+      super(message, 500, error_code)
     end
   end
 end
