@@ -65,4 +65,5 @@ end
 group :test do
   # Test coverage reporting
   gem "simplecov", require: false
+  gem "db-query-matchers"
 end
