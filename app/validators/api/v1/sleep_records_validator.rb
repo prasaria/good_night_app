@@ -15,30 +15,32 @@ module Api
 
       def validate_start_action
         validate_user_id_presence
-        validate_user_exists if @errors.empty?
-        validate_start_time if @errors.empty?
+        return false if @errors.any?
 
+        validate_user_exists
+        return false if @errors.any?
+
+        validate_start_time
         @errors.empty?
       end
 
       def validate_end_action(sleep_record_id)
         validate_user_id_presence
-        return false unless @errors.empty?
+        return false if @errors.any?
 
         validate_user_exists
-        return false unless @errors.empty?
+        return false if @errors.any?
 
         validate_sleep_record_exists(sleep_record_id)
-        return false unless @errors.empty?
+        return false if @errors.any?
 
         validate_user_owns_sleep_record(@sleep_record)
-        return false unless @errors.empty?
+        return false if @errors.any?
 
         validate_sleep_record_in_progress
-        return false unless @errors.empty?
+        return false if @errors.any?
 
         validate_end_time
-
         @errors.empty?
       end
 
