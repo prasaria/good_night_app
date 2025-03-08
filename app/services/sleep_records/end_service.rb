@@ -10,21 +10,21 @@ module SleepRecords
     end
 
     def call
-      return ServiceResult.failure("Sleep record is required") if sleep_record.nil?
+      raise Exceptions::BadRequestError, "Sleep record is required" if sleep_record.nil?
 
       # Check if record is already completed
       if sleep_record.end_time.present?
-        return ServiceResult.failure("Sleep record is already completed")
+        raise Exceptions::UnprocessableEntityError, "Sleep record is already completed"
       end
 
       # Validate end time is after start time
       if end_time <= sleep_record.start_time
-        return ServiceResult.failure("End time must be after start time")
+        raise Exceptions::UnprocessableEntityError, "End time must be after start time"
       end
 
       # Validate end time is not in the future
       if end_time > Time.current
-        return ServiceResult.failure("End time cannot be in the future")
+        raise Exceptions::UnprocessableEntityError, "End time cannot be in the future"
       end
 
       # Update the sleep record
@@ -36,11 +36,14 @@ module SleepRecords
         sleep_record.end_time
       )
 
-      if sleep_record.save
-        ServiceResult.success(sleep_record: sleep_record)
-      else
-        ServiceResult.failure(sleep_record.errors.full_messages)
+      unless sleep_record.save
+        # Convert ActiveRecord errors to a single exception
+        error_message = sleep_record.errors.full_messages.join(", ")
+        raise Exceptions::UnprocessableEntityError, error_message
       end
+
+      # Return the sleep record directly
+      sleep_record
     end
   end
 end
