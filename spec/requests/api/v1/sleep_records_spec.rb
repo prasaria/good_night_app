@@ -2,6 +2,180 @@
 require 'rails_helper'
 
 RSpec.describe "Api::V1::SleepRecords", type: :request do
+  describe "GET /api/v1/sleep_records" do
+    let(:user) { create(:user) }
+    let(:valid_params) { { user_id: user.id } }
+
+    # Set up test data
+    before do
+      # Create a mix of completed and in-progress sleep records
+      create(:sleep_record, user: user, start_time: 1.day.ago, end_time: 16.hours.ago, duration_minutes: 8 * 60)
+      create(:sleep_record, user: user, start_time: 2.days.ago, end_time: 40.hours.ago, duration_minutes: 8 * 60)
+      create(:sleep_record, user: user, start_time: 3.days.ago, end_time: 64.hours.ago, duration_minutes: 8 * 60)
+      create(:sleep_record, user: user, start_time: 8.days.ago, end_time: 7.days.ago, duration_minutes: 24 * 60)
+      create(:sleep_record, user: user, start_time: 2.hours.ago, end_time: nil)
+
+      # Create records for another user
+      other_user = create(:user)
+      create(:sleep_record, user: other_user, start_time: 1.day.ago, end_time: 16.hours.ago)
+    end
+
+    context "with valid parameters" do
+      it "returns all sleep records for the user" do
+        get "/api/v1/sleep_records", params: valid_params
+
+        expect(response).to have_http_status(:ok)
+        expect(response.content_type).to include("application/json")
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["status"]).to eq("success")
+        expect(json_response["data"]["sleep_records"].length).to eq(5)
+        expect(json_response["data"]["sleep_records"].first).to include(
+          "id", "user_id", "start_time", "end_time", "duration_minutes"
+        )
+      end
+
+      it "includes pagination metadata" do
+        get "/api/v1/sleep_records", params: valid_params
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["data"]["pagination"]).to include(
+          "total_count", "current_page", "total_pages", "per_page"
+        )
+      end
+    end
+
+    context "when filtering by status" do
+      it "returns only completed sleep records" do
+        get "/api/v1/sleep_records", params: valid_params.merge(completed_only: true)
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["data"]["sleep_records"].length).to eq(4)
+
+        # All returned records should have an end_time
+        expect(json_response["data"]["sleep_records"].map { |r| r["end_time"] }).to all(be_present)
+      end
+
+      it "returns only in-progress sleep records" do
+        get "/api/v1/sleep_records", params: valid_params.merge(in_progress_only: true)
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["data"]["sleep_records"].length).to eq(1)
+
+        # All returned records should have a nil end_time
+        expect(json_response["data"]["sleep_records"].first["end_time"]).to be_nil
+      end
+    end
+
+    context "when filtering by date range" do
+      it "returns sleep records from last week" do
+        get "/api/v1/sleep_records", params: valid_params.merge(from_last_week: true)
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["data"]["sleep_records"].length).to eq(4) # 4 records within last week
+      end
+
+      it "returns sleep records from custom start date" do
+        get "/api/v1/sleep_records", params: valid_params.merge(start_date: 2.days.ago.iso8601)
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["data"]["sleep_records"].length).to eq(3) # 3 records from last 2 days
+      end
+
+      it "returns sleep records until custom end date" do
+        get "/api/v1/sleep_records", params: valid_params.merge(end_date: 4.days.ago.iso8601)
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["data"]["sleep_records"].length).to eq(1) # 1 record before 4 days ago
+      end
+    end
+
+    context "with pagination parameters" do
+      it "paginates the results" do
+        get "/api/v1/sleep_records", params: valid_params.merge(page: 1, per_page: 2)
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["data"]["sleep_records"].length).to eq(2)
+        expect(json_response["data"]["pagination"]["current_page"]).to eq(1)
+        expect(json_response["data"]["pagination"]["total_pages"]).to eq(3) # 5 records, 2 per page
+      end
+
+      it "returns the correct page" do
+        get "/api/v1/sleep_records", params: valid_params.merge(page: 2, per_page: 2)
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["data"]["sleep_records"].length).to eq(2)
+        expect(json_response["data"]["pagination"]["current_page"]).to eq(2)
+      end
+    end
+
+    context "with sorting parameters" do
+      it "sorts by duration in descending order" do
+        get "/api/v1/sleep_records", params: valid_params.merge(
+          sort_by: "duration",
+          sort_direction: "desc",
+          completed_only: true
+        )
+
+        json_response = JSON.parse(response.body)
+        durations = json_response["data"]["sleep_records"].map { |r| r["duration_minutes"] }
+        expect(durations).to eq(durations.sort.reverse)
+      end
+
+      it "sorts by start_time" do
+        get "/api/v1/sleep_records", params: valid_params.merge(
+          sort_by: "start_time",
+          sort_direction: "asc"
+        )
+
+        json_response = JSON.parse(response.body)
+        start_times = json_response["data"]["sleep_records"].map { |r| Time.zone.parse(r["start_time"]) }
+        expect(start_times).to eq(start_times.sort)
+      end
+    end
+
+    context "with invalid parameters" do
+      it "returns error when user_id is missing" do
+        get "/api/v1/sleep_records", params: {}
+
+        expect(response).to have_http_status(:bad_request)
+        json_response = JSON.parse(response.body)
+        expect(json_response["status"]).to eq("error")
+        expect(json_response["details"]).to include("user_id parameter is required")
+      end
+
+      it "returns error when user doesn't exist" do
+        get "/api/v1/sleep_records", params: { user_id: 999999 }
+
+        expect(response).to have_http_status(:not_found)
+        json_response = JSON.parse(response.body)
+        expect(json_response["status"]).to eq("error")
+        expect(json_response["details"]).to include("User not found")
+      end
+
+      it "returns error when date format is invalid" do
+        get "/api/v1/sleep_records", params: valid_params.merge(start_date: "invalid-date")
+
+        expect(response).to have_http_status(:bad_request)
+        json_response = JSON.parse(response.body)
+        expect(json_response["status"]).to eq("error")
+        expect(json_response["details"]).to include("Invalid start_date format")
+      end
+
+      it "returns error when start_date is after end_date" do
+        get "/api/v1/sleep_records", params: valid_params.merge(
+          start_date: 1.day.ago.iso8601,
+          end_date: 3.days.ago.iso8601
+        )
+
+        expect(response).to have_http_status(:bad_request)
+        json_response = JSON.parse(response.body)
+        expect(json_response["status"]).to eq("error")
+        expect(json_response["details"]).to include("start_date must be before end_date")
+      end
+    end
+  end
+
   describe "POST /api/v1/sleep_records/start" do
     let(:user) { create(:user) }
     let(:valid_params) { { user_id: user.id } }
