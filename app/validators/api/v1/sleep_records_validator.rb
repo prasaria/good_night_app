@@ -53,11 +53,24 @@ module Api
         return unless params[:start_time].present?
 
         begin
-          @start_time = Time.zone.parse(params[:start_time])
-          @errors << "Start time cannot be in the future" if @start_time > Time.current
+          if valid_iso8601_format?(params[:start_time])
+            @start_time = Time.zone.parse(params[:start_time])
+            @errors << "Start time cannot be in the future" if @start_time > Time.current
+          else
+            @errors << "Invalid start_time format"
+          end
         rescue ArgumentError
           @errors << "Invalid start_time format"
         end
+      end
+
+      # Validates if string follows ISO 8601 format (YYYY-MM-DDThh:mm:ss[.sss][Z|±hh:mm])
+      def valid_iso8601_format?(string)
+        # Basic ISO 8601 regex pattern
+        iso8601_pattern = /\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\z/
+
+        # Check if string matches the pattern
+        string.match?(iso8601_pattern)
       end
     end
   end
