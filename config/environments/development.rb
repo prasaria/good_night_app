@@ -17,14 +17,25 @@ Rails.application.configure do
 
   # Enable/disable Action Controller caching. By default Action Controller caching is disabled.
   # Run rails dev:cache to toggle Action Controller caching.
-  if Rails.root.join("tmp/caching-dev.txt").exist?
-    config.public_file_server.headers = { "cache-control" => "public, max-age=#{2.days.to_i}" }
+  # Determine if caching should be enabled based on environment and file
+  is_docker = ENV["DOCKER_ENV"] == "true"
+  caching_file_exists = Rails.root.join("tmp/caching-dev.txt").exist?
+
+  # Enable caching in Docker by default, or when the file exists
+  if is_docker || caching_file_exists
+    config.action_controller.perform_caching = true
+    config.cache_store = :redis_cache_store, {
+      url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"),
+      namespace: "good_night_app:#{Rails.env}",
+      expires_in: 1.day,
+      compress: true
+    }
+    puts "Caching ENABLED in development mode"
   else
     config.action_controller.perform_caching = false
+    config.cache_store = :memory_store
+    puts "Caching DISABLED in development mode"
   end
-
-  # Change to :null_store to avoid any caching.
-  config.cache_store = :memory_store
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
