@@ -7,12 +7,9 @@ $redis = Redis.new(
   timeout: 1
 )
 
-# Log connection status in development
+# Explicitly log connection status in development to log file
 if Rails.env.development?
-  begin
-    $redis.ping
-    Rails.logger.info "Redis connected successfully at #{ENV.fetch('REDIS_URL', 'redis://localhost:6379/0')}"
-  rescue Redis::CannotConnectError => e
-    Rails.logger.error "Failed to connect to Redis: #{e.message}"
+  File.open(Rails.root.join("log", "redis_connection.log"), "a") do |f|
+    f.puts "#{Time.zone.now} - Redis connection status: #{$redis.ping rescue 'ERROR: ' + $!.message}"
   end
 end
