@@ -20,6 +20,7 @@ Rails.application.configure do
   # Determine if caching should be enabled based on environment and file
   is_docker = ENV["DOCKER_ENV"] == "true"
   caching_file_exists = Rails.root.join("tmp/caching-dev.txt").exist?
+  config.log_level = :debug
 
   # Enable caching in Docker by default, or when the file exists
   if is_docker || caching_file_exists
