@@ -39,7 +39,6 @@ This application provides a REST API for users to track their sleep schedules an
 - PostgreSQL 16
 - Redis 7 (for caching)
 - Docker & Docker Compose (for containerized development)
-- 90%+ test coverage
 
 ## Getting Started
 
