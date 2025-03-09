@@ -24,6 +24,13 @@ else
   bundle exec rails db:prepare db:seed
 fi
 
+# Create cache directory and enable caching in Docker
+if [ "$DOCKER_ENV" = "true" ] && [ "$RAILS_ENV" = "development" ]; then
+  mkdir -p /rails/tmp
+  touch /rails/tmp/caching-dev.txt
+  echo "Enabled caching for Docker development environment"
+fi
+
 # Execute the main command
 echo "Starting application..."
 exec "$@"
