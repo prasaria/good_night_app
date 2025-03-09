@@ -25,5 +25,6 @@ Rails.application.routes.draw do
     end
   end
 
-  get "api/v1/health", to: "api/v1/health#check"
+  get "health", to: "api/v1/health#check"
+  get "health/redis", to: "api/v1/health#redis"
 end
