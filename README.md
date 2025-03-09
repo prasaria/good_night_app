@@ -147,6 +147,40 @@ docker-compose exec web bundle exec rubocop -A
 
 ## Database Structure
 
+### Database Schema (ERD)
+
+```mermaid
+erDiagram
+    users {
+        bigint id PK
+        string name
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    sleep_records {
+        bigint id PK
+        bigint user_id FK
+        timestamp start_time
+        timestamp end_time
+        integer duration_minutes
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    followings {
+        bigint id PK
+        bigint follower_id FK
+        bigint followed_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    users ||--o{ sleep_records : has
+    users ||--o{ followings : follows
+    users }o--|| followings : followed_by
+```
+
 ### Models and Relationships
 
 - **User**
