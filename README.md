@@ -30,12 +30,14 @@ This application provides a REST API for users to track their sleep schedules an
 - **Service-Oriented Design**: Domain logic encapsulated in service objects with a consistent interface
 - **Validator Pattern**: Input validation through dedicated validator classes that raise appropriate exceptions
 - **API-First Design**: RESTful endpoints with comprehensive filtering, sorting, and pagination
+- **Redis Caching**: Optimized performance with Redis-based caching for frequently accessed data
 
 ## Technical Requirements
 
 - Ruby 3.3.4
 - Rails 8
 - PostgreSQL 16
+- Redis 7 (for caching)
 - Docker & Docker Compose (for containerized development)
 - 90%+ test coverage
 
@@ -115,6 +117,15 @@ docker-compose exec web rails db:rollback STEP=3
 
 # Seed the database
 docker-compose exec web rails db:seed
+```
+
+### System Health Checks
+
+The application includes health check endpoints to verify system components:
+
+```bash
+# Check Redis cache health
+curl http://localhost:3000/health/redis
 ```
 
 ### Code Quality
@@ -222,6 +233,10 @@ docker-compose exec web bundle exec rspec spec/e2e
 
 - `GET /api/v1/followings/sleep_records` - Get sleep records of followed users with filtering, sorting, and pagination
 
+### System Health
+
+- `GET /health/redis` - Check Redis cache connectivity and performance
+
 ## Key Components
 
 ### Error Handler Middleware
@@ -259,15 +274,24 @@ API responses are formatted by serializers that:
 - Avoid N+1 query issues through proper eager loading
 - Support conditional inclusion of related data
 
+### Caching Layer
+
+Data retrieval is optimized through:
+
+- Redis-based caching for frequently accessed data
+- Intelligent cache key generation incorporating user context, parameters, and timestamps
+- Automatic cache invalidation upon data changes
+- Graceful fallback to database when cache is unavailable
+
 ## Scalability Strategies
 
 This application is designed to handle high data volumes and concurrent requests through:
 
 - Optimized database indexing
 - Connection pooling
-- Caching with Redis
+- Redis caching with namespace isolation
 - API pagination
-- Fiber-based concurrency for I/O operations
+- Fiber-based concurrency for I/O operations (TBA).
 - Efficient query optimization
 
 ## CI/CD Pipeline
@@ -288,6 +312,15 @@ This project follows a modular, service-oriented architecture inspired by Spree 
 - Serializers format API responses
 - Validators ensure data integrity
 - Middleware provides cross-cutting concerns
+- Cache helpers optimize data retrieval performance
+
+## Troubleshooting
+
+### Common Issues
+
+- **Redis Connectivity**: If caching isn't working, check Redis connection via the `/health/redis` endpoint
+- **Database Connectivity**: Ensure PostgreSQL container is running and healthy
+- **Cache Invalidation**: If stale data appears, try clearing the cache via Rails console: `Rails.cache.clear`
 
 ## License
 
@@ -297,4 +330,5 @@ This project is using MIT Licensed and created as part of an interview exercise.
 
 - Built with Ruby on Rails 8
 - PostgreSQL for reliable data storage
+- Redis for high-performance caching
 - Docker for consistent development environments
