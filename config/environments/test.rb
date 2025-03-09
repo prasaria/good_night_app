@@ -20,7 +20,11 @@ Rails.application.configure do
 
   # Show full error reports.
   config.consider_all_requests_local = true
-  config.cache_store = :null_store
+  # Use a memory store for caching in tests - much safer than Redis for tests
+  config.cache_store = :memory_store
+
+  # Disable caching by default in test environment
+  config.action_controller.perform_caching = false
 
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable
