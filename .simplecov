@@ -16,6 +16,7 @@ SimpleCov.start 'rails' do
   add_group 'Models', 'app/models'
   add_group 'Services', 'app/services'
   add_group 'Serializers', 'app/serializers'
+  add_group 'Validators', 'app/validators'
 
   minimum_coverage 90
 end
